@@ -1,12 +1,21 @@
-version = "1.0"
+version = "1.1"
 import socket
 import reqtypes
 import time
 import asyncio
 import os
+import sys
 import platform
 import urllib.parse
 import urllib.request
+
+newcode = urllib.request.get("https://raw.githubusercontent.com/MvonK/zelenina-chat/master/client.py").text
+newest_version = newcode.split("\n")[0].split('"')[-2]
+if newest_version > version:
+	with open(__file__ + sys.argv[0]) as code:
+		code.write(newcode)
+	import code
+	sys.exit()
 
 
 read = "READ"
@@ -156,6 +165,8 @@ class Client:
 			key, val = param[:pos], param[pos+1:]
 			contentDict.update({key: val})
 		return contentDict
+
+
 
 
 client = Client()
