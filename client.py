@@ -16,8 +16,8 @@ def main():
 		print("updating")
 		with open(__file__, "w") as code:
 			code.write(newcode)
-		import code
-		code.main()
+		import code as updated
+		updated.main()
 		sys.exit(0)
 	else:
 		read = "READ"
