@@ -1,6 +1,5 @@
-version = "1.2"
+version = "1.3"
 import socket
-import reqtypes
 import time
 import asyncio
 import os
@@ -16,9 +15,10 @@ def main():
 		print("updating")
 		with open(__file__, "w") as code:
 			code.write(newcode)
-		import code as updated
-		updated.main()
-		sys.exit(0)
+		filename = __file__.split("\\")[-1].split("/")[-1]
+		print(sys.executable + __file__)
+		os.execl(sys.executable, "python", __file__)
+
 	else:
 		read = "READ"
 		listen = "LISTEN"
