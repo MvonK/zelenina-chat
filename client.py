@@ -1,4 +1,4 @@
-version = "1.4"
+version = "1.4.1"
 import socket
 import time
 import asyncio
@@ -161,10 +161,10 @@ def main():
 							if msg.good:
 								self.cet.AddMessage(msg)
 							else:
-								self.sock.close()
+								print("Broken message :/")
 						last = messages[-1]
 					except:
-						
+						traceback.print_exc()
 						self.sock.close()
 						print("Connection timed out. Reconnecting...")
 						await asyncio.sleep(2)
