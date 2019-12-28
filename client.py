@@ -1,4 +1,4 @@
-version = "1.5"
+version = "1.5.1"
 import socket
 import time
 import asyncio
@@ -9,7 +9,7 @@ import urllib.request
 import traceback
 
 def main():
-	newcode = urllib.request.urlopen("https://raw.githubusercontent.com/MvonK/zelenina-chat/master/client.py").read().decode().replace("\r", "")
+	newcode = urllib.request.urlopen(urllib.request.Request("https://raw.githubusercontent.com/MvonK/zelenina-chat/master/client.py", headers={"Cache-Control": "no-cache"})).read().decode().replace("\r", "")
 	newest_version = newcode.split("\n")[0].split('"')[-2]
 	if newest_version != version:
 		print("updating")
