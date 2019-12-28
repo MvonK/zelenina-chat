@@ -1,22 +1,21 @@
-version = "1.3"
+version = "1.4"
 import socket
 import time
 import asyncio
 import os
 import sys
 import platform
-import urllib.parse
 import urllib.request
+import traceback
 
 def main():
 	newcode = urllib.request.urlopen("https://raw.githubusercontent.com/MvonK/zelenina-chat/master/client.py").read().decode().replace("\r", "")
 	newest_version = newcode.split("\n")[0].split('"')[-2]
-	if newest_version > version:
+	if newest_version != version:
 		print("updating")
 		with open(__file__, "w") as code:
 			code.write(newcode)
 		filename = __file__.split("\\")[-1].split("/")[-1]
-		print(sys.executable + __file__)
 		os.execl(sys.executable, "python", __file__)
 
 	else:
@@ -24,6 +23,19 @@ def main():
 		listen = "LISTEN"
 		send_message = "SEND"
 		connect="CONNECT"
+
+		
+		async def send_sticker(name):
+			try:
+				with open("stickers/"+name, "r") as f:
+					for x in f:
+						request = client.requestPrepare({"body":x[:-1], "reqtype": send_message})
+						client.sock.send(request)
+						await asyncio.sleep(0.1)
+			except:
+				print("Couldn't open sticker " + name)
+				traceback.print_exc()
+				
 
 		class Chat:
 			def __init__(self):
@@ -51,15 +63,17 @@ def main():
 			def __init__(self, msg):
 				self.good = True
 				try:
-					self.content = urllib.parse.unquote(msg["content"]).replace("+", " ")
-					self.sender =  msg["sender"].replace("+", " ")
-					self.time =  urllib.parse.unquote(msg["time"]).strip("+\r")
+					
+					self.content = msg["content"]
+					self.sender =  msg["sender"]
+					self.time =  msg["time"]
 					self.id =  int(msg["id"])
 				except:
 					print("Message bad!")
-					print(msg)
-					traceback.print_exc()
+					#print(msg)
 					self.good = False
+					traceback.print_exc()
+					
 
 		class Client:
 			def __init__(self):
@@ -84,27 +98,28 @@ def main():
 				).encode())
 
 
-			def con(self, host = "127.0.0.1", port=80):
-				self.target_host = host
+			def con(self, host = "127.0.0.1", port=42069):
+				while True:
+					self.target_host = host
 
-				self.target_port = port  # create a socket object 
-				self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
+					self.target_port = port 
+					self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
 
-				# connect the client 
-				print("Connecting to " + self.target_host + ":" + str(self.target_port))
-				self.sock.connect((self.target_host,self.target_port))  
-				print("Connected")
-				self.credentials = {"pass": "pas", "user": "use"}
-				request = self.requestPrepare({"reqtype": connect})
+					# connect the client 
+					print("Connecting to " + self.target_host + ":" + str(self.target_port))
+					self.sock.connect((self.target_host,self.target_port))  
+					print("Connected")
+					self.credentials = {"pass": "pas", "user": "use"}
+					request = self.requestPrepare({"reqtype": connect})
 
 
 		
-				self.sock.send(request)
-				print("Sent login request...")
+					self.sock.send(request)
+					print("Sent login request...")
 
-				self.loop = asyncio.get_event_loop()
-				self.loop.create_task(self.mainloop())
-				self.loop.run_forever()
+					self.loop = asyncio.get_event_loop()
+					self.loop.create_task(self.mainloop())
+					self.loop.run_forever()
 
 
 			async def chatWriting(self):
@@ -112,8 +127,11 @@ def main():
 				while True:
 					try:
 						text = await self.loop.run_in_executor(None, input)
-						request = self.requestPrepare({"body":text, "reqtype":send_message})
-						self.sock.send(request)
+						if text[0] == ":" and text[-1] == ":":
+							await send_sticker(text[1:-1])
+						else:
+							request = self.requestPrepare({"body":text, "reqtype":send_message})
+							self.sock.send(request)
 					except:
 						traceback.print_exc()
 				print("Writing ended!")
@@ -125,13 +143,14 @@ def main():
 				self.sock.send(self.requestPrepare({"reqtype":listen}))
 				print("Listening ready!")
 				while True:
-					last = ""
+					last = b""
 					try:
 						await asyncio.sleep(0.1)
 						response = await self.loop.run_in_executor(None, self.sock.recv, 4096)
-						http_response = last + response.decode()
-				
-						messages = http_response.split("|")
+						bytemessages = (last + response).split(b"\x03")
+						last = bytemessages[-1]
+						messages = [b.decode() for b in bytemessages]
+						
 						for m in messages[1:]:
 							m = m[4:]
 						messages.pop()
@@ -145,9 +164,10 @@ def main():
 								self.sock.close()
 						last = messages[-1]
 					except:
-						traceback.print_exc()
+						
 						self.sock.close()
-						print("Connection timed out. Restart application pls")
+						print("Connection timed out. Reconnecting...")
+						await asyncio.sleep(2)
 						self.loop.stop()
 				print("Listening ended!")
 
@@ -172,6 +192,7 @@ def main():
 
 
 		client = Client()
+		
 		client.con(host = "trojsten.ddns.net", port=42069)
 
 if __name__ == "__main__":
